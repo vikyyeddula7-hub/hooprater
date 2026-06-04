@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ stats.name }} — HoopRater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/main.css"/>
+</head>
+<body>
+<nav class="nav">
+  <div class="sport-switcher">
+    <a href="/" class="sport-btn active">🏀 HoopRater</a>
+    <a href="/tennis" class="sport-btn">🎾 SmashRater</a>
+  </div>
+  <div class="nav-links">
+    <a href="/">Ratings</a>
+    <a href="/teams">Teams</a>
+    <a href="/compare">Compare</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-wrap">
+      <input id="search-input" type="text" placeholder="Search player…" autocomplete="off"/>
+      <div id="search-results" class="search-dropdown hidden"></div>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" title="Toggle mode">☀️</button>
+  </div>
+</nav>
+
+{% set tier = rating_engine.rating_tier(rating) %}
+{% set tc = team_color(stats.team) %}
+
+<div class="player-hero" style="--team-clr:{{ tc }};">
+  <div class="player-hero-accent"></div>
+  <div class="player-hero-bg"></div>
+  <div class="container player-hero-inner">
+    <div class="player-photo-wrap">
+      <img class="player-photo" src="{{ stats.headshot_url }}" alt="{{ stats.name }}" onerror="this.src='/static/img/silhouette.svg'"/>
+    </div>
+    <div class="player-hero-info">
+      <div class="breadcrumb"><a href="/">← All Players</a></div>
+      <p class="player-pos-tag">{{ stats.position }} · {{ stats.team }} · 2025–26</p>
+      <h1 class="player-name">{{ stats.name }}</h1>
+      <p class="player-season">{{ stats.gp }} Games · {{ "%.1f"|format(stats.min) }} MPG · Year {{ stats.age }} · {{ college }}</p>
+      <div class="big5">
+        <div class="big5-stat"><span class="big5-val">{{ "%.1f"|format(stats.pts) }}</span><span class="big5-lbl">PTS</span></div>
+        <div class="big5-stat"><span class="big5-val">{{ "%.1f"|format(stats.reb) }}</span><span class="big5-lbl">REB</span></div>
+        <div class="big5-stat"><span class="big5-val">{{ "%.1f"|format(stats.ast) }}</span><span class="big5-lbl">AST</span></div>
+        <div class="big5-stat"><span class="big5-val">{{ "%.1f"|format(stats.stl) }}</span><span class="big5-lbl">STL</span></div>
+        <div class="big5-stat"><span class="big5-val">{{ "%.1f"|format(stats.blk) }}</span><span class="big5-lbl">BLK</span></div>
+      </div>
+      <div class="callout-badges">
+        {% if stats.pts >= 30 %}<span class="cbadge">🔥 30+ Scorer</span>{% endif %}
+        {% if stats.pts >= 25 and stats.pts < 30 %}<span class="cbadge">⚡ 25+ Scorer</span>{% endif %}
+        {% if stats.reb >= 10 %}<span class="cbadge">💪 Double-Double Machine</span>{% endif %}
+        {% if stats.ast >= 8 %}<span class="cbadge">🎯 Elite Playmaker</span>{% endif %}
+        {% if stats.stl + stats.blk >= 3 %}<span class="cbadge">🛡️ Two-Way Force</span>{% endif %}
+        {% if stats.fg3_pct >= 0.40 and stats.fg3a >= 5 %}<span class="cbadge">🌟 Elite 3PT Shooter</span>{% endif %}
+        {% if rating >= 97 %}<span class="cbadge gold-badge">👑 All-Time Great</span>{% endif %}
+        {% if rating >= 94 and rating <= 96 %}<span class="cbadge gold-badge">🏆 MVP-Caliber</span>{% endif %}
+      </div>
+    </div>
+    <div class="ovr-hero-wrap">
+      <div class="ovr-hero badge-{{ tier.badge }}" id="ovr-hero" data-target="{{ rating }}">
+        <span class="ovr-hero-num" id="ovr-counter">0</span>
+        <span class="ovr-hero-lbl">OVR</span>
+        <span class="ovr-hero-tier" style="color:{{ tier.color }}">{{ tier.label }}</span>
+        <span class="ovr-hero-game">NBA 2K26</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="container player-main">
+  <div class="player-cols">
+    <section class="stat-section">
+      <h2 class="section-title">2025–26 Season Stats</h2>
+      <table class="stat-table">
+        <thead><tr><th>Category</th><th>Value</th><th>Context</th></tr></thead>
+        <tbody>
+          <tr><td>Points</td><td class="mono">{{ "%.1f"|format(stats.pts) }}</td><td class="ctx">{{ context_note(stats.pts,"pts") }}</td></tr>
+          <tr><td>Rebounds</td><td class="mono">{{ "%.1f"|format(stats.reb) }}</td><td class="ctx">{{ context_note(stats.reb,"reb") }}</td></tr>
+          <tr><td>Assists</td><td class="mono">{{ "%.1f"|format(stats.ast) }}</td><td class="ctx">{{ context_note(stats.ast,"ast") }}</td></tr>
+          <tr><td>Steals</td><td class="mono">{{ "%.1f"|format(stats.stl) }}</td><td class="ctx">{{ context_note(stats.stl,"stl") }}</td></tr>
+          <tr><td>Blocks</td><td class="mono">{{ "%.1f"|format(stats.blk) }}</td><td class="ctx">{{ context_note(stats.blk,"blk") }}</td></tr>
+          <tr><td>Turnovers</td><td class="mono">{{ "%.1f"|format(stats.tov) }}</td><td class="ctx">{{ context_note(stats.tov,"tov",true) }}</td></tr>
+          <tr><td>FG%</td><td class="mono">{{ "%.1f"|format(stats.fg_pct*100) }}%</td><td class="ctx">{{ context_note(stats.fg_pct,"fg_pct") }}</td></tr>
+          <tr><td>3PT%</td><td class="mono">{{ "%.1f"|format(stats.fg3_pct*100) }}%</td><td class="ctx">{{ context_note(stats.fg3_pct,"fg3_pct") }}</td></tr>
+          <tr><td>FT%</td><td class="mono">{{ "%.1f"|format(stats.ft_pct*100) }}%</td><td class="ctx">{{ context_note(stats.ft_pct,"ft_pct") }}</td></tr>
+          <tr><td>True Shooting%</td><td class="mono">{{ "%.1f"|format(stats.ts_pct*100) }}%</td><td class="ctx">{{ context_note(stats.ts_pct,"ts_pct") }}</td></tr>
+          <tr><td>+/- Per Game</td><td class="mono {% if stats.plus_minus>0 %}pos{% elif stats.plus_minus<0 %}neg{% endif %}">{% if stats.plus_minus>0 %}+{% endif %}{{ "%.1f"|format(stats.plus_minus) }}</td><td class="ctx">{{ context_note(stats.plus_minus,"plus_minus") }}</td></tr>
+          <tr><td>Minutes</td><td class="mono">{{ "%.1f"|format(stats.min) }}</td><td class="ctx">—</td></tr>
+          <tr><td>Games Played</td><td class="mono">{{ stats.gp }}</td><td class="ctx">—</td></tr>
+          <tr><td>College</td><td class="mono" colspan="2">{{ college }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="attr-section">
+      <h2 class="section-title">2K26 Attribute Breakdown</h2>
+      <div class="attr-list">
+        {% for attr, val in breakdown.items() %}
+        <div class="attr-row">
+          <span class="attr-name">{{ attr }}</span>
+          <div class="attr-bar-wrap" title="{{ attr }}: {{ val }}/99">
+            <div class="attr-bar" style="--pct:{{ val }}%;--clr:{{ bar_color(val) }};"></div>
+          </div>
+          <span class="attr-val mono">{{ val }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="shot-summary">
+        <h3 class="section-title" style="margin-top:2rem;">Shooting at a Glance</h3>
+        <div class="shot-grid">
+          {% for pct, label in [(stats.fg_pct,"FG%"),(stats.fg3_pct,"3PT%"),(stats.ft_pct,"FT%")] %}
+          <div class="shot-cell">
+            <svg viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 50 A35 35 0 0 1 70 50" fill="none" stroke="var(--border)" stroke-width="5" stroke-linecap="round"/>
+              <path d="M10 50 A35 35 0 0 1 70 50" fill="none" stroke="#4FC3F7" stroke-width="5" stroke-linecap="round" stroke-dasharray="110" stroke-dashoffset="{{ (1-pct)*110 }}"/>
+              <text x="40" y="49" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--text)" font-weight="600">{{ "%.0f"|format(pct*100) }}%</text>
+              <text x="40" y="61" text-anchor="middle" font-family="Barlow" font-size="7" fill="var(--text-dim)">{{ label }}</text>
+            </svg>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="rating-explain">
+        <h3>About This Rating</h3>
+        <p>The OVR is the official <strong>NBA 2K26</strong> player rating from <a href="https://nba.2k.com/2k26/ratings/" target="_blank">nba.2k.com</a>. Attribute bars are estimated from 2025–26 stats.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- Feature 1: AI Player Analysis -->
+{% if ai_available %}
+<section class="container ai-section">
+  <div class="ai-section-inner">
+    <h2 class="ai-section-title">🤖 AI Player Analysis</h2>
+    <p class="ai-section-sub">Get a Claude-powered deep-dive on {{ stats.name }}'s 2025-26 season.</p>
+    <button id="ai-analyze-btn" class="ai-analyze-btn" data-player-id="{{ stats.id }}">
+      🤖 Generate AI Analysis
+    </button>
+    <div id="ai-analysis-output" class="ai-output hidden"></div>
+  </div>
+</section>
+{% endif %}
+
+<footer class="footer">
+  <p>HoopRater · Stats from <a href="https://www.nba.com" target="_blank">NBA.com</a> · OVR from <a href="https://nba.2k.com/2k26/ratings/" target="_blank">NBA 2K26</a></p>
+</footer>
+<script src="/static/js/search.js"></script>
+<script src="/static/js/player.js"></script>
+<script>window.AI_AVAILABLE = {{ "true" if ai_available else "false" }};</script>
+<script src="/static/js/ai_features.js"></script>
+<script src="/static/js/ai_chat.js"></script>
+</body>
+</html>
