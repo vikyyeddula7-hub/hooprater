@@ -1,0 +1,33 @@
+name: Auto-Update ATP Tennis Rankings
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # Every Monday at 8AM UTC (ATP updates Mondays)
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run ATP rankings update agent
+        run: python update_tennis.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "SmashRater Bot"
+          git config user.email "smashrater-bot@users.noreply.github.com"
+          git add tennis_data.py
+          git diff --staged --quiet || git commit -m "🎾 Auto-update ATP rankings $(date -u '+%Y-%m-%d')"
+          git push
